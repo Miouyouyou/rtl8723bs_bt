@@ -1109,6 +1109,7 @@ static int read_check_rtk(int fd, void *buf, int count)
 	int res;
 	do {
 		res = read(fd, buf, count);
+		RS_ERR("Read %d bytes, Result : %d\n", count, res);
 		if (res != -1) {
 			buf = (RT_U8*)buf + res;
 			count -= res;
@@ -1136,7 +1137,11 @@ static void h5_tsync_sig_alarm(int sig)
 		retries++;
 		struct sk_buff *nskb = h5_prepare_pkt(&rtk_hw_cfg, h5sync, sizeof(h5sync), H5_LINK_CTL_PKT);
 		int len = write(rtk_hw_cfg.serial_fd, nskb->data, nskb->data_len);
-		RS_DBG("3-wire sync pattern resend : %d, len: %d\n", retries, len);
+		RS_ERR(
+			"[%d/%d] 3-wire sync pattern resend FD : %d,len: %d\n",
+			retries, rtk_hw_cfg.h5_max_retries,
+			rtk_hw_cfg.serial_fd, len
+		);
 
 		skb_free(nskb);
 		//gordon add 2013-6-7 retry per 250ms
