@@ -2108,6 +2108,23 @@ struct rtk_epatch_entry *rtk_get_patch_entry(void)
     return entry;
 }
 
+static void print_firmware
+(uint8_t const * __restrict const got_signature,
+ uint8_t const * __restrict const expected_signature) {
+	RS_ERR(
+		"Got      : %x %x %x %x %x %x %x %x\n"
+		"Expected : %x %x %x %x %x %x %x %x\n",
+		 got_signature[0], got_signature[1],
+		 got_signature[2], got_signature[3],
+		 got_signature[4], got_signature[5],
+		 got_signature[6], got_signature[7],
+		 expected_signature[0], expected_signature[1],
+		 expected_signature[2], expected_signature[3],
+		 expected_signature[4], expected_signature[5],
+		 expected_signature[6], expected_signature[7]
+	);
+}
+
 void rtk_get_final_patch(int fd, int proto)
 {
     uint8_t proj_id = 0;
@@ -2122,6 +2139,7 @@ void rtk_get_final_patch(int fd, int proto)
     if ((proto == HCI_UART_H4) || ((proto == HCI_UART_3WIRE) && (rtk_hw_cfg.lmp_version == ROM_LMP_8723a))){
         if(memcmp(rtk_hw_cfg.fw_buf, RTK_EPATCH_SIGNATURE, 8) == 0){
             RS_ERR("Check signature error!");
+	    print_firmware(rtk_hw_cfg.fw_buf, RTK_EPATCH_SIGNATURE);
             rtk_hw_cfg.dl_fw_flag = 0;
             goto free_buf;
         } else {
