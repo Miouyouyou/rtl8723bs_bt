@@ -1097,6 +1097,30 @@ static int h5_recv(rtk_hw_cfg_t *h5, void *data, int count)
 }
 
 /**
+ * Print the provided buffer content
+ * 
+ * @param buffer The buffer to print the content from
+ * @param buffer_size The number of bytes to print from the buffer
+ * @param representation A string precising how the buffer is
+ *                       currently printed
+ * @param byte_format The printf format used to print each byte
+ */
+static void print_buffer_as
+(uint8_t const * __restrict const buffer,
+ uint_fast32_t const buffer_size,
+ char const * __restrict const representation,
+ char const * __restrict const byte_format)
+{
+	RS_ERR("Packet (%s) :", representation);
+	for (uint_fast32_t i = 0; i < buffer_size; i++) {
+		// Ugly but will do the trick for now
+		fprintf(stderr, byte_format, buffer[i]);
+		fprintf(stderr, "%s", " ");
+	}
+	fprintf(stderr, "\n");
+}
+
+/**
 * Read data to buf from uart.
 *
 * @param fd uart file descriptor
@@ -1109,8 +1133,9 @@ static int read_check_rtk(int fd, void *buf, int count)
 	int res;
 	do {
 		res = read(fd, buf, count);
-		RS_ERR("Read %d bytes, Result : %d\n", count, res);
+		RS_ERR("Read %d bytes from %d, Result : %d\n", fd, count, res);
 		if (res != -1) {
+			print_buffer_as(buf, res, "hexa", "%02x");
 			buf = (RT_U8*)buf + res;
 			count -= res;
 			return res;
@@ -1138,11 +1163,11 @@ static void h5_tsync_sig_alarm(int sig)
 		struct sk_buff *nskb = h5_prepare_pkt(&rtk_hw_cfg, h5sync, sizeof(h5sync), H5_LINK_CTL_PKT);
 		int len = write(rtk_hw_cfg.serial_fd, nskb->data, nskb->data_len);
 		RS_ERR(
-			"[%d/%d] 3-wire sync pattern resend FD : %d,len: %d\n",
+			"[%d/%d] 3-wire sync pattern wrote FD : %d - len : %d\n",
 			retries, rtk_hw_cfg.h5_max_retries,
 			rtk_hw_cfg.serial_fd, len
 		);
-
+		print_buffer_as(nskb->data, nskb->data_len, "hexa",  "%02x");
 		skb_free(nskb);
 		//gordon add 2013-6-7 retry per 250ms
 		value.it_value.tv_sec = 0;
